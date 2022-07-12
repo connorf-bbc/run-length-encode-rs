@@ -1,0 +1,41 @@
+# Design of an RLE algorithm
+
+General idea being,
+- split the uncompressed stream into chunks (one for each core)
+  - is this splitting process expensive (ie have to traverse list to split it)
+- for each stream do an RLE encode
+  - fold over the stream into a list of pairs (length, colour)
+- merge
+  - look at the "seams" to figure this out
+  - probably also some kind of fold
+
+Considerations:
+- Want to design something that is fast and can be parallelised.
+  - look at https://rust-lang-nursery.github.io/rust-cookbook/concurrency/parallel.html
+  - would be cool to benchmark tuning this
+- Plug-in strategy for output format (as mono is different to greysacle in sample impl)
+- Plug in strategy for "closeness" so we can do lossy
+
+
+// this gets a bit complicated, idea will be to avoid backtracing over any list (so don't look at last elem in acc for instance)
+fn rle (list)
+{
+  list.fold(emlist, |acc, x| {
+    if current pair is nil then this is the first item
+      current pair is (1, x)
+    if current pair not nil then we are tracing something of the form (n, y)
+      if (x == y) we are still tracing // this x == y can become rel(x, y) for the lossy one
+        current pair = (n + 1, x)
+      else we've reached a new value
+        acc += current pair // is this expensive? need to make sure insertion is O(1)
+        current pair = (1, y)
+  }).map(whatever encoding of this representation) // needs to consider that sometimes mono prepends "0" when the first val is a white pixel
+                                                   // also, when we get there, this encoding has to happen after the merge so merge can do its comparison
+}
+
+for the merge operation, if we know chunk length then we can index last elements in constant time for our merge operations
+merge chunkA, chunkB :=
+  (A, a) = chunkA splitting off last elem
+  (b, B) = chunkB splitting off first elem
+  now compare elems a/b and join all three(or four) lists together
+  
