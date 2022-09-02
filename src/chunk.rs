@@ -7,7 +7,7 @@ pub type Chunk = (char, usize);
 pub fn runs(s: &str, shade: Shade) -> String {
     let encoding: ChunkEncoding = match shade {
         Mono => chunk_encode_mono_hex,
-        Greyscale => chunk_encode_greyscale_dec,
+        Greyscale(_) => chunk_encode_greyscale_hex,
     };
 
     return chunks(s, shade)
@@ -31,7 +31,12 @@ fn chunks(s: &str, shade: Shade) -> Vec<Chunk> {
                 acc.push((c, 1));
             }
             Some((run_c, n_run_c)) => {
-                if c == run_c {
+                let chars_match = match shade {
+                    Greyscale(n) => ((c as i32) - (run_c as i32)).abs() <= (n as i32),
+                    _ => c == run_c,
+                };
+
+                if chars_match {
                     acc.push((run_c, n_run_c + 1));
                 } else {
                     acc.push((run_c, n_run_c));
@@ -48,7 +53,6 @@ fn empty() {
 }
 
 // mono tests
-
 #[test]
 fn one_black() {
     assert_eq!(runs("0", Mono), "1");
@@ -92,10 +96,31 @@ fn blacks_then_whites_then_blacks() {
 // greyscale tests
 #[test]
 fn one_grey() {
-    assert_eq!(runs("A", Greyscale), "A1");
+    assert_eq!(runs("A", Greyscale(0)), "A1");
 }
 
 #[test]
 fn one_white_in_greyscale_does_not_count_black_first() {
-    assert_eq!(runs("1", Greyscale), "11");
+    assert_eq!(runs("F", Greyscale(0)), "F1");
+}
+
+// compression tests
+#[test]
+fn black_then_white_not_compressed() {
+    assert_eq!(runs("0F", Greyscale(0)), "01,F1");
+}
+
+#[test]
+fn out_by_one_compressed() {
+    assert_eq!(runs("34", Greyscale(1)), "32");
+}
+
+#[test]
+fn out_by_two_not_compressed() {
+    assert_eq!(runs("35", Greyscale(1)), "31,51");
+}
+
+#[test]
+fn out_by_two_compressed() {
+    assert_eq!(runs("35", Greyscale(2)), "32");
 }
