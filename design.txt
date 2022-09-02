@@ -39,3 +39,9 @@ merge chunkA, chunkB :=
   (b, B) = chunkB splitting off first elem
   now compare elems a/b and join all three(or four) lists together
   
+
+
+# closeness function
+- a function from char, char -> score
+- a threshold
+- if score < threshold then combine else dont
